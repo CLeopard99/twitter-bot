@@ -14,60 +14,71 @@ T.get("account/verify_credentials", {
 function onAuthenticated(err, res) {
   if (err) {
     throw err;
-  }
+  } else if (res) console.log("Authentication successful. Running bot...\r\n");
+} // Listen to stream and tracks activity involving the bot
 
-  console.log("Authentication successful. Running bot...\r\n");
+
+var stream = T.stream("user"); // When the bot is followed, call followed function
+
+stream.on("follow", followed); // When bot is tweeted at, call mentioned function
+
+stream.on("tweet", mentioned); // Get screenName of user who followed bot
+
+function followed(event) {
+  var screenName = event.source.screen_name;
+  var response = "Thanks for following me, @" + screenName + " :)"; // Post thankyou tweet to user
+
+  T.post("statuses/update", {
+    status: response
+  }, tweeted);
+  console.log("I was followed by: @" + screenName);
 }
 
-var stream = T.stream('statuses/filter', {
-  track: ['@succulent_bot']
-});
-stream.on('tweet', function (tweet) {
-  console.log('tweet received! ', tweet);
-  T.post('statuses/retweet/:id', {
+function mentioned(tweet) {
+  console.log("Mention received! ", tweet); // Like mentions
+
+  T.post("favorites/create", {
     id: tweet.id
-  }, function (err, data, response) {
-    console.log(err, data, response);
-  });
-});
-/*
-// Params to search for tweets according to query q
-let params = {
-  q: "#succulent", // Only required param
-  result_type: "recent",
+  }, logReponse); // Retweet mentions
+  // T.post('statuses/retweet/:id', {id: tweet.id}, logReponse);
+
+  var screenName = tweet.user.screen_name;
+  var reply = "Hey @" + screenName + ", Thanks for the mentions!";
+  console.log(reply);
+  T.post("statuses/update", {
+    status: reply
+  }, tweeted);
+} // logs errors from requests
+
+
+function logReponse(err) {
+  console.log(err);
+} // Params to search for tweets according to query q
+
+
+var params = {
+  q: "#succulents",
+  // Only required param
+  result_type: "popular",
   count: 10,
+  lang: "en"
 };
 
 function retweet() {
-  searchTweets(params);
-}
-setInterval(retweet, 2000);
-
-function searchTweets(params) {
-  T.get("search/tweets", params, (err, data, response) => {
-    let tweets = data.statuses;
+  T.get("search/tweets", params, function (err, data) {
     if (!err) {
-        // Take ID of tweets to retweet
-      for (let dat of tweets) {
-        let retweetId = dat.id_str;
-        postTweet(retweetId);
-      }
+      var retweetId = data.statuses.id;
+      T.post("statuses/retweet/" + retweetId, {}, checkRetweet);
+    } else {
+      console.log("There was an error during tweet search: ", error);
     }
   });
 }
 
-function postTweet(retweetId) {
-  T.post(
-    "statuses/retweet/:id",
-    {
-      id: retweetId,
-    },
-    responded(err, response)
-  );
-}
+function checkRetweet(err, reply) {
+  err !== undefined ? console.log(err + 'Problem when retweeting. Possibly already retweeted this tweet!') : console.log("Retweeted: " + reply);
+} // Retweet every 4 hours
 
-function responded(err, response) {
-  if (response) console.log("Retweeted! " + retweetId);
-  if (err) console.log("Something went wrong while retweeting");
-}
-*/
+
+retweet();
+setInterval(retweet, 4 * 60 * 60 * 1000);
