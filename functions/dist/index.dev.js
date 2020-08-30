@@ -1,39 +1,42 @@
-const config = require("./config");
-const twit = require("twit");
-const T = new twit(config);
+"use strict";
 
-T.get(
-  "account/verify_credentials",
-  {
-    include_entities: false,
-    skip_status: true,
-    include_email: false,
-  },
-  onAuthenticated
-);
+var functions = require('firebase-functions');
+
+var twit = require("twit");
+
+var config = require("./config");
+
+var T = new twit(config);
+
+var admin = require('firebase-admin');
+
+admin.initializeApp(functions.config().firebase);
+T.get("account/verify_credentials", {
+  include_entities: false,
+  skip_status: true,
+  include_email: false
+}, onAuthenticated);
 
 function onAuthenticated(err, res) {
   if (err) {
     throw err;
   }
+
   console.log("Authentication successful. Running bot...\r\n");
-}
+} // Uses the stream API to 'like' any tweet the bot is mentioned in
 
-const stream = T.stream('statuses/filter', { track: ['@succulent_bot'] });
 
-stream.on('tweet',
-  tweet => {
-    console.log('tweet received! ', tweet)
-    T.post(
-      'statuses/retweet/:id',
-      { id: tweet.id },
-      (err, data, response) => {
-        console.log(err, data, response);
-      }
-    )
-  }
-);
-
+var stream = T.stream("statuses/filter", {
+  track: ["@Succulent_Bot"]
+});
+stream.on("tweet", function (tweet) {
+  console.log("Tweet recieved! " + tweet);
+  T.post("statuses/retweet/:id", {
+    id: tweet.id
+  }, function (err, data, response) {
+    console.log(err, data, reponse);
+  });
+});
 /*
 // Params to search for tweets according to query q
 let params = {
