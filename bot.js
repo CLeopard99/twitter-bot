@@ -18,69 +18,87 @@ function onAuthenticated(err, res) {
   } else if (res) console.log("Authentication successful. Running bot...\r\n");
 }
 
+// Listen to stream and tracks activity involving the bot
+var stream = T.stream("statuses/filter", { track: "@Succulent_Bot" });
+// When bot is tweeted at, call mentioned function
+stream.on("tweet", mentioned);
+// When the bot is followed, call followed function
+stream.on("follow", followed);
 
-// Get screenName of user who followed bot
 function followed(event) {
+  // Get username & screen_name of user who followed bot
+  let name = tweet.user.name;
   let screenName = event.source.screen_name;
-  let response = "Thanks for following me, @" + screenName + " :)";
-  // Post thankyou tweet to user
-  T.post("statuses/update", { status: response }, tweeted);
-
-  console.log('I was followed by: @' + screenName);
+  let response = "Hi, thanks for following me, " + name  + "! Hope you enjoy my tweets :) "
+  // Message new follower
+  T.post('direct_messages/new', {user_id: user.id_str, response}, function (err) {
+    err ? console.log("Failed to message follower: " + err) : "New follower messaged!"
+  })
+  console.log("I was followed by: @" + screenName);
 }
 
 function mentioned(tweet) {
-  console.log('Mention received! ', tweet)
+  console.log("Mention received! ", tweet.id);
   // Like mentions
-  T.post('favorites/create', { id: tweet.id }, logReponse)
+  //T.post('favorites/create', { id: tweet.id }, logReponse);
   // Retweet mentions
-  // T.post('statuses/retweet/:id', {id: tweet.id}, logReponse);
-  let screenName = tweet.user.screen_name
-  let reply = 'Hey @' + screenName + ', Thanks for the mentions!'
-  console.log(reply)
-  T.post('statuses/update', { status: reply }, tweeted)
+  //T.post('statuses/retweet/:id', {id: tweet.id}, logReponse);
+  let name = tweet.user.name;
+  let screenName = tweet.user.screen_name;
+  let reply = "Hey " + name + " @" + screenName + ", Thanks for the mention! :)";
+  console.log(reply);
+  tweetNow(reply);
+  likeTweet(tweet);
 }
 
-// logs errors from requests
-function logReponse(err) {
-  console.log(err)
+// Like/favorite tweet
+function likeTweet(tweet) {
+  T.post("favorites/create", { id: tweet.id_str }, function (err) {
+    err ? console.log("Failed to like tweet: " + err) : "Tweet liked!";
+  })
 }
 
-// Params to search for tweets according to query q
-let params = {
-  q: '#succulents', // Only required param
-  result_type: 'recent',
+// Post tweet
+function tweetNow(tweetText) {
+  let tweet = {
+    status: tweetText,
+  };
+  T.post("statuses/update", tweet, checkRetweet);
+}
+
+// Params to search for tweets
+const searchParams = {
+  q: "#succulents",
   count: 10,
-  lang: 'en',
+  result_type: "recent",
+  lang: "en",
 };
 
-function retweet() {
-  T.get('search/tweet', params, function (err, data) {
+// Retweet recent tweet
+function retweetRecent() {
+  T.get("search/tweets", searchParams, function (err, data) {
     if (!err) {
-      let retweetId = data.statuses[0].id;
-      T.post('statuses/retweet/' + retweetId, {}, checkRetweet);
-    } else {
-      console.log('There was an error during tweet search: ', error);
+      // Take id of tweet and retweet
+      let retweetId = data.statuses[0].id_str;
+      T.post("statuses/retweet/" + retweetId, {}, checkRetweet);
+    }
+    //Otherwise, log error
+    else {
+      console.log("There was an error while searching for tweets: ", err);
     }
   });
 }
 
-function checkRetweet(err, reply) {
-  err !== undefined
-    ? console.log(
-        err +
-          'Problem when retweeting. Possibly already retweeted this tweet!'
-      )
-    : console.log('Retweeted: ' + reply);
+// Check if function worked by logging tweet or error message
+function checkRetweet(err, tweet) {
+  if (err !== undefined) {
+    // error (usually a duplicate retweet)
+    console.log(err);
+  } else {
+    console.log("Tweeted: " + tweet.text);
+  }
 }
 
-retweet
-// Retweet every 4 hours
-setInterval(retweet, 4 * 60 * 60 * 1000);
-
-// Listen to stream and tracks activity involving the bot
-var stream = T.stream('statuses/filter', { track: '@succulent_bot' });
-// When the bot is followed, call followed function
-stream.on("follow", followed);
-// When bot is tweeted at, call mentioned function
-stream.on("tweet", mentioned);
+// Retweet when ran and then in 4 hour intervals
+retweetRecent();
+setInterval(retweetRecent, 1000 * 60 * 60 * 4);
