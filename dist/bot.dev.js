@@ -50,8 +50,9 @@ function mentioned(tweet) {
   var name = tweet.user.name;
   var screenName = tweet.user.screen_name;
   var reply = "Hey " + name + " @" + screenName + ", Thanks for the mention! :)";
-  console.log(reply);
-  tweetNow(reply);
+  console.log(reply); // tweetNow(reply);
+
+  T.post("statuses/retweet/" + tweet.id_str, reply, checkRetweet);
   likeTweet(tweet);
 } // Like/favorite tweet
 
