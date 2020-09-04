@@ -10,6 +10,8 @@
   "author": "Charlie Leopard",
   "license": "ISC",
   "dependencies": {
+    "image-downloader": "^4.0.1",
+    "snoowrap": "^1.21.0",
     "twit": "^2.2.11"
   }
 }
