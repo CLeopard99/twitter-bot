@@ -85,17 +85,17 @@ function followed(event) {
     err ? console.log("Failed to message follower: " + err) : "New follower messaged!";
   });
   console.log("I was followed by: @" + screenName);
-} // Params to search for tweets
+} // Retweet recent tweet
 
-
-var searchParams = {
-  q: "#succulents OR #cacti OR #houseplants filter:media",
-  count: 1,
-  result_type: "popular",
-  lang: "en"
-}; // Retweet recent tweet
 
 function retweetRecent() {
+  // Params to search for tweets
+  var searchParams = {
+    q: "#succulents OR #cacti OR #houseplants filter:media",
+    count: 10,
+    result_type: "recent",
+    lang: "en"
+  };
   twitter.get("search/tweets", searchParams, function (err, data) {
     if (!err) {
       // Take id of tweet and retweet
@@ -120,7 +120,7 @@ function checkRetweet(err, tweet) {
 
 
 function scrapeSubreddit(sub) {
-  var subreddit, topPost, data, title, postUrl;
+  var subreddit, topPost, data, title, postUrl, dest;
   return regeneratorRuntime.async(function scrapeSubreddit$(_context) {
     while (1) {
       switch (_context.prev = _context.next) {
@@ -149,13 +149,14 @@ function scrapeSubreddit(sub) {
           });
           title = data[0].title;
           postUrl = "reddit.com/" + data[0].id;
-          console.log(data[0]); // Store image in project (overrides previous image)
+          console.log(data[0]);
+          dest = "./media/" + sub + ".jpg"; // Store image in project (overrides previous image)
 
-          downloadImage(data[0].link); // Tweet reddit post with delay to allow for image to be downloaded (due to async function)
+          downloadImage(data[0].link, dest); // Tweet reddit post with delay to allow for image to be downloaded (due to async function)
 
           setTimeout(function () {
             // Read the image to be able to upload it to twitter
-            var b64content = fs.readFileSync("./media/image.jpg", {
+            var b64content = fs.readFileSync(dest, {
               encoding: "base64"
             }); // Upload the image to be able to post it
 
@@ -176,7 +177,7 @@ function scrapeSubreddit(sub) {
             }
           }, 1000);
 
-        case 13:
+        case 14:
         case "end":
           return _context.stop();
       }
@@ -192,10 +193,10 @@ function callSubreddits() {
 } // Download image from reddit post (url) and store it in destination
 
 
-function downloadImage(url) {
+function downloadImage(url, dest) {
   var options = {
     url: url,
-    dest: "./media/image.jpg"
+    dest: dest
   };
   download.image(options).then(function (_ref) {
     var filename = _ref.filename;
