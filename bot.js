@@ -1,28 +1,51 @@
-const twitter = require("./twitterConfig");
-const reddit = require("./redditConfig");
+/**********************************************************************
+ * bot.js includes:
+ * - (Re)tweeting, liking, & noticing follows & mentions
+ * with the Twitter API
+ * - Reddit's API is used to grab the top post of subreddits
+ * - The use of a large JSON file made from web scraping (plant-scraper.js)
+ * to tweet create a new tweet daily
+ * - Image downloading & converting, tweet creation etc.
+ *
+ * Author: Charlie Leopard
+ *********************************************************************/
+
+// Imports
+const twitter = require("./twitter-config");
+const reddit = require("./reddit-config");
 const download = require("image-downloader");
 const fs = require("fs");
 
 main();
-
+// Main to call functions in one place
 function main() {
   verify();
 
-  // Listen to stream and tracks activity involving the bot
-  const stream = twitter.stream("statuses/filter", { track: "@RedditPlants" });
+  // Listen to stream and track activity involving the bot
+  const stream = twitter.stream("statuses/filter", { track: "@DailyPlantBot" });
   // When bot is tweeted at, call mentioned function
   stream.on("tweet", mentioned);
   // When the bot is followed, call followed function
   stream.on("follow", followed);
 
-  // Retweet when ran and then in 4 hour intervals
-  retweetRecent();
-  setInterval(retweetRecent, 1000 * 60 * 60 * 6);
-
-  // When ran and every 24 hours post top post of called subreddits
-  callSubreddits();
+  // Post plant of the day
+  dailyPlant();
+  // Retweet something in 10 hour intervals
+  setInterval(retweetRecent, 1000 * 60 * 60 * 10);
+  // Every 24 hours post tweet post of called subreddits
   setInterval(callSubreddits, 1000 * 60 * 60 * 24);
 }
+
+/**********************************************
+ * Twitter API functions
+ * - verify() & onAuthenticated()
+ * - likeTweet()
+ * - tweetNow()
+ * - mentioned()
+ * - followed()
+ * - retweetRecent()
+ * - checkTweet()
+ **********************************************/
 
 // Verify account details and run if correct
 function verify() {
@@ -43,19 +66,6 @@ function onAuthenticated(err, res) {
   } else if (res) console.log("Authentication successful. Running bot...\r\n");
 }
 
-function mentioned(tweet) {
-  console.log("Mention received! ", tweet.id);
-  // Retweet mentions
-  //twitter.post("statuses/retweet/" + tweet.id_str, checkRetweet);
-  let name = tweet.user.name;
-  let screenName = tweet.user.screen_name;
-  let reply =
-    "Hey " + name + " @" + screenName + ", Thanks for the mention! :)";
-  console.log(reply);
-  tweetNow(reply);
-  likeTweet(tweet);
-}
-
 // Like/favorite tweet
 function likeTweet(tweet) {
   twitter.post("favorites/create", { id: tweet.id_str }, function (err) {
@@ -64,13 +74,27 @@ function likeTweet(tweet) {
 }
 
 // Post tweet
-function tweetNow(tweetText) {
-  let tweet = {
-    status: tweetText,
-  };
-  twitter.post("statuses/update", tweet, checkRetweet);
+function tweetNow(tweet) {
+  twitter.post("statuses/update", tweet, checkTweet);
 }
 
+// Respond when mentioned (tweeted @)
+function mentioned(tweet) {
+  console.log("Mention received! ", tweet.id);
+  // Retweet mentions
+  //twitter.post("statuses/retweet/" + tweet.id_str, checkTweet);
+  // Get user's username and @name to create tweet
+  let name = tweet.user.name;
+  let screenName = tweet.user.screen_name;
+  let reply =
+    "Hey " + name + " @" + screenName + ", Thanks for the mention! :)";
+  let params = { status: reply };
+
+  tweetNow(params);
+  likeTweet(tweet);
+}
+
+// Reponse when new follower recieved
 function followed(event) {
   // Get username & screen_name of user who followed bot
   let name = tweet.user.name;
@@ -104,7 +128,7 @@ function retweetRecent() {
     if (!err) {
       // Take id of tweet and retweet
       let retweetId = data.statuses[0].id_str;
-      twitter.post("statuses/retweet/" + retweetId, {}, checkRetweet);
+      twitter.post("statuses/retweet/" + retweetId, {}, checkTweet);
     }
     //Otherwise, log error
     else {
@@ -114,13 +138,27 @@ function retweetRecent() {
 }
 
 // Check if function worked by logging tweet or error message
-function checkRetweet(err, tweet) {
+function checkTweet(err, tweet) {
   if (err !== undefined) {
     // error (usually a duplicate retweet)
     console.log(err);
   } else {
     console.log("Tweeted: " + tweet.text);
   }
+}
+
+/**********************************************
+ * Reddit API functions
+ * - callSubreddits()
+ * - scrapeSubreddit()
+ * - create & tweet top posts
+ **********************************************/
+
+// call scrapeSubreddit on subreddits wanted, setInterval() in main requires this callback
+function callSubreddits() {
+  scrapeSubreddit("succulents");
+  scrapeSubreddit("houseplants");
+  scrapeSubreddit("cactus");
 }
 
 // Gets top post of the last 24 hours of specified subreddit
@@ -137,15 +175,23 @@ async function scrapeSubreddit(sub) {
       id: post.id,
     });
   });
+
   let title = data[0].title;
   let postUrl = "reddit.com/" + data[0].id;
+  let dest = "./media/" + sub + ".jpg";
+  let statusText =
+    "Today's top post of r/" +
+    sub +
+    ": " +
+    title +
+    "\nSource: [" +
+    postUrl +
+    "]";
 
-  console.log(data[0]);
-  let dest = "./media/" + sub + ".jpg"
-  // Store image in project (overrides previous image)
+  // Store image in project (overrides previous sub image)
   downloadImage(data[0].link, dest);
 
-  // Tweet reddit post with delay to allow for image to be downloaded (due to async function)
+  // Tweet reddit post with delay to allow for image to be downloaded
   setTimeout(function () {
     // Read the image to be able to upload it to twitter
     let b64content = fs.readFileSync(dest, {
@@ -157,29 +203,80 @@ async function scrapeSubreddit(sub) {
 
     function uploaded(err, data, response) {
       // Now we can reference the image and post a tweet with the image
-      let statusText =
-        "Today's top post of r/" +
-        sub +
-        ": " +
-        title +
-        "\nSource: [" +
-        postUrl +
-        "]";
 
       let mediaIdStr = data.media_id_string;
       let params = { status: statusText, media_ids: [mediaIdStr] };
       // Post tweet
-      twitter.post("statuses/update", params, checkRetweet);
+      tweetNow(params);
     }
   }, 1000);
 }
 
-// call scrapeSubreddit on subreddits wanted, setInterval() in main requires this callback
-function callSubreddits() {
-  scrapeSubreddit("succulents");
-  scrapeSubreddit("houseplants");
-  scrapeSubreddit("cactus");
+/**********************************************
+ * Web-scrapped/JSON content
+ * - dailyPlant()
+ * - create & tweet daily
+ **********************************************/
+
+// Post plant of the day every 24 hours
+function dailyPlant() {
+  // initialise function variables
+  let i = 0; // counter to post next plant
+  let plants = [];
+  let plantName = "";
+  let dest = "./media/dailyplant.jpg";
+
+  readJson();
+  setInterval(getPlant, 1000 * 60 * 60 * 24);
+
+  // read plant list from succulents-database.json
+  function readJson() {
+    fs.readFile("succulents-database.json", "utf-8", (err, data) => {
+      if (err) {
+        throw err;
+      }
+      // parse JSON object
+      plants = JSON.parse(data.toString());
+    });
+  }
+
+  function getPlant() {
+    //console.log(plants[i]);
+    // Store image in project (overrides previous image)
+    let url = plants[i].plantImage;
+    plantName = plants[i].plantName;
+    downloadImage(url, dest);
+    i++;
+
+    setTimeout(function () {
+      // Read the image to be able to upload it to twitter
+      let b64content = fs.readFileSync(dest, {
+        encoding: "base64",
+      });
+
+      // Upload the image to be able to post it
+      twitter.post("media/upload", { media_data: b64content }, uploaded);
+
+      function uploaded(err, data, response) {
+        // Now we can reference the image and post a tweet with the image
+        let statusText =
+          "Succulent/Cacti of the day is: " +
+          plantName +
+          "\n#PicOfTheDay #LearnSomethingNewEveryday";
+
+        let mediaIdStr = data.media_id_string;
+        let params = { status: statusText, media_ids: [mediaIdStr] };
+        // Post tweet
+        tweetNow(params);
+      }
+    }, 1000);
+  }
 }
+
+/**********************************************
+ * Other functions
+ * - downloadImage()
+ **********************************************/
 
 // Download image from reddit post (url) and store it in destination
 function downloadImage(url, dest) {
