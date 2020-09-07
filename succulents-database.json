@@ -1,4 +1,3 @@
-// Example of succulents-database.json (actual file 1500 lines)
 [
   {
     "plantName": "Anacampseros rufescens “Sunrise”",
@@ -7,5 +6,9 @@
   {
     "plantName": "Echinocactus grusonii",
     "plantImage": "https://example.com/Echinocactus-grusonii.jpg"
+  }, 
+  {
+    "..."
+    "..."
   }
 ]
