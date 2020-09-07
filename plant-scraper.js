@@ -14,7 +14,7 @@ scrapeSite();
 // scrape plant names and images from specific website
 function scrapeSite() {
   // url of webpage to scrape
-  const url = "https://plantsam.com/cacti-succulents/";
+  const url = "https://example.com";
   axios(url)
     .then((response) => {
       // take html of page
@@ -22,7 +22,7 @@ function scrapeSite() {
       // load html into cheerio
       const $ = cheerio.load(html);
       // store div content and initialise array
-      const plantSite = $(".relatedthumb");
+      const plantSite = $(".className");
       const plants = [];
       // for each element found, store the content
       plantSite.each(function () {
