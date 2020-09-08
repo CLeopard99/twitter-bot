@@ -12,6 +12,8 @@ This project includes the following:
 
 - The functions required to download images from urls, convert to base64 for media uploads, tweet creation etc.
 
+Have a look at bot.js for more information.
+
 ## Making Your Own Bot  
 
 If you wanted to build something similar, you will first have to connect to Twitter's API by:
