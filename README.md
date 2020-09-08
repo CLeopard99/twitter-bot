@@ -12,11 +12,7 @@ This project includes the following:
 
 - The functions required to download images from urls, convert to base64 for media uploads, tweet creation etc.
 
-<br/>
-
 ## Making Your Own Bot  
-
-<br/>
 
 If you wanted to build something similar, you will first have to connect to Twitter's API by:
 
@@ -53,11 +49,7 @@ node bot.js
 
 If you have done it correctly (with immediate function calls) then you should see some activity e.g. the bot tweeting. A running server like Heroku can run your Twitter bot for you.
 
-<br/>
-
 ## Credits
-
-<br/>
 
 [Twit API Client for Node](https://www.npmjs.com/package/twit)
 
