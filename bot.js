@@ -206,10 +206,11 @@ async function scrapeSubreddit(sub) {
 
       let mediaIdStr = data.media_id_string;
       let params = { status: statusText, media_ids: [mediaIdStr] };
+      
       // Post tweet
-      tweetNow(params);
+     tweetNow(params);
     }
-  }, 1000);
+  }, 1500);
 }
 
 /**********************************************
@@ -221,12 +222,13 @@ async function scrapeSubreddit(sub) {
 // Post plant of the day every 24 hours
 function dailyPlant() {
   // initialise function variables
-  let i = 0; // counter to post next plant
+  let i = 2; // counter to post next plant
   let plants = [];
   let plantName = "";
   let dest = "./media/dailyplant.jpg";
 
   readJson();
+  //setTimeout(getPlant, 2000); // for testing
   setInterval(getPlant, 1000 * 60 * 60 * 24);
 
   // read plant list from succulents-database.json
