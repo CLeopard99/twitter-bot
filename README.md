@@ -22,7 +22,7 @@ If you wanted to build something similar, you will first have to connect to Twit
 
 2. Log in [here](https://dev.twitter.com/apps/new) and fill in the form for a developer account
 
-3. You can now access the developer portal which has the:
+3. You can now access the developer portal which has:
 
     - Settings for updating details
 
