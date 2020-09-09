@@ -22,7 +22,7 @@ If you wanted to build something similar, you will first have to connect to Twit
 
 2. Log in [here](https://dev.twitter.com/apps/new) and fill in the form for a developer account
 
-3. You can now access the developer portal which has:
+3. You can now access the developer portal which has the:
 
     - Settings for updating details
 
@@ -63,6 +63,14 @@ If you have done it correctly (with immediate function calls) then you should se
 
 [Node Image Downloader](https://www.npmjs.com/package/image-downloader)
 
+## Improvements to be made
+
+- [ ] Resize images to be fully visible without pressing
+
+- [ ] Edit tweets over 140 characters (end with ...)
+
+- [ ] Prevent duplicate posts
+
 ## License
 
 ```txt
@@ -80,3 +88,4 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 ```
+
