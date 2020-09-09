@@ -71,6 +71,8 @@ If you have done it correctly (with immediate function calls) then you should se
 
 - [ ] Prevent duplicate posts
 
+- [ ] Tweet at more specific times
+
 ## License
 
 ```txt
