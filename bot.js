@@ -15,6 +15,8 @@ const twitter = require("./twitter-config");
 const reddit = require("./reddit-config");
 const download = require("image-downloader");
 const fs = require("fs");
+let database = require("./plants-database");
+let index = 0;
 
 main();
 // Main to call functions in one place
@@ -206,9 +208,9 @@ async function scrapeSubreddit(sub) {
 
       let mediaIdStr = data.media_id_string;
       let params = { status: statusText, media_ids: [mediaIdStr] };
-      
+
       // Post tweet
-     tweetNow(params);
+      tweetNow(params);
     }
   }, 1500);
 }
@@ -221,35 +223,20 @@ async function scrapeSubreddit(sub) {
 
 // Post plant of the day every 24 hours
 function dailyPlant() {
-  // initialise function variables
-  let i = 2; // counter to post next plant
-  let plants = [];
-  let plantName = "";
+  // Get index of plant database to post
+  readTxt("plantCounter.txt");
   let dest = "./media/dailyplant.jpg";
 
-  readJson();
   //setTimeout(getPlant, 2000); // for testing
   setInterval(getPlant, 1000 * 60 * 60 * 24);
 
-  // read plant list from succulents-database.json
-  function readJson() {
-    fs.readFile("succulents-database.json", "utf-8", (err, data) => {
-      if (err) {
-        throw err;
-      }
-      // parse JSON object
-      plants = JSON.parse(data.toString());
-    });
-  }
-
   function getPlant() {
-    //console.log(plants[i]);
+    let url = database[index].plantImage;
+    let plantName = database[index].plantName;
     // Store image in project (overrides previous image)
-    let url = plants[i].plantImage;
-    plantName = plants[i].plantName;
-    downloadImage(url, dest);
-    i++;
+    downloadImage(url, dest); 
 
+    // Give time to ensure image is downloaded
     setTimeout(function () {
       // Read the image to be able to upload it to twitter
       let b64content = fs.readFileSync(dest, {
@@ -258,6 +245,8 @@ function dailyPlant() {
 
       // Upload the image to be able to post it
       twitter.post("media/upload", { media_data: b64content }, uploaded);
+      // Write next index to file
+      writeTxt("plantCounter.txt");
 
       function uploaded(err, data, response) {
         // Now we can reference the image and post a tweet with the image
@@ -268,16 +257,20 @@ function dailyPlant() {
 
         let mediaIdStr = data.media_id_string;
         let params = { status: statusText, media_ids: [mediaIdStr] };
+
         // Post tweet
+        //console.log(statusText);
         tweetNow(params);
       }
-    }, 1000);
+    }, 1500);
   }
 }
 
 /**********************************************
  * Other functions
  * - downloadImage()
+ * - readTxt()
+ * - writeTxt()
  **********************************************/
 
 // Download image from reddit post (url) and store it in destination
@@ -293,4 +286,23 @@ function downloadImage(url, dest) {
       console.log("Image saved to ", filename);
     })
     .catch((err) => console.log(err));
+}
+
+// Read text file and store as index (for getting next plant)
+function readTxt(file) {
+  fs.readFile(file, "utf8", function (err, data) {
+    if (err) throw err;
+    index = data;
+  });
+}
+
+// Increment index and write new number to file
+function writeTxt(file) {
+  index++;
+  fs.writeFile(file, index, (err) => {
+    if (err) {
+      throw err;
+    }
+    console.log("Plants-database index incremented: " + index);
+  });
 }
