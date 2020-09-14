@@ -73,6 +73,8 @@ If you have done it correctly (with immediate function calls) then you should se
 
 - [ ] Tweet at more specific times
 
+- [ ] Handle Reddit post that contain media other than an image
+
 ## License
 
 ```txt
