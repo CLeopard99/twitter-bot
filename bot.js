@@ -16,7 +16,7 @@ const reddit = require("./reddit-config");
 const download = require("image-downloader");
 const fs = require("fs");
 let database = require("./plants-database");
-let index = 0;
+let index;
 
 main();
 // Main to call functions in one place
@@ -30,6 +30,8 @@ function main() {
   // When the bot is followed, call followed function
   stream.on("follow", followed);
 
+  // Get index of plant database to post
+  readTxt("plantCounter.txt");
   // Post plant of the day
   dailyPlant();
   // Retweet something in 10 hour intervals
@@ -166,9 +168,9 @@ function callSubreddits() {
 // Gets top post of the last 24 hours of specified subreddit
 async function scrapeSubreddit(sub) {
   const subreddit = await reddit.getSubreddit(sub);
-  const topPost = await subreddit.getTop({ time: "day", limit: 1 });
+  const topPost = await subreddit.getTop({ time: "day", limit: 5 });
 
-  // stores image url, title, and post id in object array
+  // Stores image url, title, and post id in object array
   let data = [];
   topPost.forEach((post) => {
     data.push({
@@ -178,9 +180,19 @@ async function scrapeSubreddit(sub) {
     });
   });
 
-  let title = data[0].title;
-  let postUrl = "reddit.com/" + data[0].id;
+  // Grab first top post that has an image (jpg)
+  let index;
+  for (index = 0; index < data.length; i++) {
+    let link = data[index].link;
+    if (link.substr(link.length - 3) == "jpg") {
+      break;
+    }
+  }
+
+  let title = data[index].title;
+  let postUrl = "reddit.com/" + data[index].id;
   let dest = "./media/" + sub + ".jpg";
+
   let statusText =
     "Today's top post of r/" +
     sub +
@@ -188,10 +200,11 @@ async function scrapeSubreddit(sub) {
     title +
     "\nSource: [" +
     postUrl +
-    "]";
+    "]" +
+    "\n#PlantTwitter";
 
   // Store image in project (overrides previous sub image)
-  downloadImage(data[0].link, dest);
+  downloadImage(data[index].link, dest);
 
   // Tweet reddit post with delay to allow for image to be downloaded
   setTimeout(function () {
@@ -208,7 +221,7 @@ async function scrapeSubreddit(sub) {
 
       let mediaIdStr = data.media_id_string;
       let params = { status: statusText, media_ids: [mediaIdStr] };
-
+      
       // Post tweet
       tweetNow(params);
     }
@@ -223,18 +236,21 @@ async function scrapeSubreddit(sub) {
 
 // Post plant of the day every 24 hours
 function dailyPlant() {
-  // Get index of plant database to post
-  readTxt("plantCounter.txt");
+  // Reset database to first if all plants tweeted
+  if (index > database.length) index = 0;
+
+  // Store image here
   let dest = "./media/dailyplant.jpg";
 
-  //setTimeout(getPlant, 2000); // for testing
+  // every 24 hours
   setInterval(getPlant, 1000 * 60 * 60 * 24);
+  setInterval(getPlant, 3000); // for testing
 
   function getPlant() {
     let url = database[index].plantImage;
     let plantName = database[index].plantName;
     // Store image in project (overrides previous image)
-    downloadImage(url, dest); 
+    downloadImage(url, dest);
 
     // Give time to ensure image is downloaded
     setTimeout(function () {
@@ -253,13 +269,12 @@ function dailyPlant() {
         let statusText =
           "Succulent/Cacti of the day is: " +
           plantName +
-          "\n#PicOfTheDay #LearnSomethingNewEveryday";
+          "\n#PicOfTheDay #LearnSomethingNewEveryday #PlantTwitter";
 
         let mediaIdStr = data.media_id_string;
         let params = { status: statusText, media_ids: [mediaIdStr] };
 
         // Post tweet
-        //console.log(statusText);
         tweetNow(params);
       }
     }, 1500);
@@ -293,6 +308,7 @@ function readTxt(file) {
   fs.readFile(file, "utf8", function (err, data) {
     if (err) throw err;
     index = data;
+    return index;
   });
 }
 
