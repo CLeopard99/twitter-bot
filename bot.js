@@ -1,10 +1,10 @@
 /**********************************************************************
  * bot.js includes:
  * - (Re)tweeting, liking, & noticing follows & mentions
- * with the Twitter API
+ *   with the Twitter API
  * - Reddit's API is used to grab the top post of subreddits
  * - The use of a large JSON file made from web scraping (plant-scraper.js)
- * to tweet create a new tweet daily
+ *   to tweet create a new tweet daily
  * - Image downloading & converting, tweet creation etc.
  *
  * Author: Charlie Leopard
@@ -30,14 +30,25 @@ function main() {
   // When the bot is followed, call followed function
   stream.on("follow", followed);
 
-  // Get index of plant database to post
-  readTxt("plantCounter.txt");
-  // Post plant of the day
-  dailyPlant();
+  // Set count to milliseconds till 12pm
+  let now = new Date();
+  let millisTill12 =
+    new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12, 0, 0, 0) -
+    now;
+  // If past 12, wait 24 hours
+  if (millisTill12 < 0) {
+    millisTill12 += 86400000;
+  }
+  // Call functions at 12pm
+  setTimeout(function () {
+    //  plant of the day
+    dailyPlant();
+    // Tweet top post of called subreddits
+    callSubreddits();
+  }, millisTill12);
+
   // Retweet something in 10 hour intervals
   setInterval(retweetRecent, 1000 * 60 * 60 * 10);
-  // Every 24 hours post tweet post of called subreddits
-  setInterval(callSubreddits, 1000 * 60 * 60 * 24);
 }
 
 /**********************************************
@@ -182,7 +193,7 @@ async function scrapeSubreddit(sub) {
 
   // Grab first top post that has an image (jpg)
   let index;
-  for (index = 0; index < data.length; i++) {
+  for (index = 0; index < data.length; index++) {
     let link = data[index].link;
     if (link.substr(link.length - 3) == "jpg") {
       break;
@@ -221,9 +232,9 @@ async function scrapeSubreddit(sub) {
 
       let mediaIdStr = data.media_id_string;
       let params = { status: statusText, media_ids: [mediaIdStr] };
-      
+      console.log(statusText);
       // Post tweet
-      tweetNow(params);
+      //  tweetNow(params);
     }
   }, 1500);
 }
@@ -236,15 +247,11 @@ async function scrapeSubreddit(sub) {
 
 // Post plant of the day every 24 hours
 function dailyPlant() {
-  // Reset database to first if all plants tweeted
-  if (index > database.length) index = 0;
-
+  // Get index of plant database to post
+  readTxt("plantCounter.txt");
   // Store image here
   let dest = "./media/dailyplant.jpg";
-
-  // every 24 hours
-  setInterval(getPlant, 1000 * 60 * 60 * 24);
-  setInterval(getPlant, 3000); // for testing
+  setTimeout(getPlant, 1000);
 
   function getPlant() {
     let url = database[index].plantImage;
@@ -269,13 +276,13 @@ function dailyPlant() {
         let statusText =
           "Succulent/Cacti of the day is: " +
           plantName +
-          "\n#PicOfTheDay #LearnSomethingNewEveryday #PlantTwitter";
+          "\n#PicOfTheDay #PlantTwitter #LearnSomethingNewEveryday";
 
         let mediaIdStr = data.media_id_string;
         let params = { status: statusText, media_ids: [mediaIdStr] };
-
+        console.log(statusText);
         // Post tweet
-        tweetNow(params);
+        //tweetNow(params);
       }
     }, 1500);
   }
@@ -308,6 +315,8 @@ function readTxt(file) {
   fs.readFile(file, "utf8", function (err, data) {
     if (err) throw err;
     index = data;
+    // Reset database to first if all plants tweeted
+    if (index > database.length) index = 0;
     return index;
   });
 }
