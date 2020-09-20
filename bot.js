@@ -4,7 +4,9 @@
  *   with the Twitter API
  * - Reddit's API is used to grab the top post of subreddits
  * - The use of a large JSON file made from web scraping (plant-scraper.js)
- *   to tweet create a new tweet daily
+ *   to create a new tweet daily
+ * - Firebase real-time database is used to store the JSON externally so data 
+ *   can be taken while automated with Heroku
  * - Image downloading & converting, tweet creation etc.
  *
  * Author: Charlie Leopard
@@ -14,9 +16,12 @@
 const twitter = require("./twitter-config");
 const reddit = require("./reddit-config");
 const download = require("image-downloader");
+const db = require("./firebase-config"); // for external database of plants (to work on Heroku)
 const fs = require("fs");
-let database = require("./plants-database");
-let index;
+// Name and image url of new plant for dailyPlant()
+let plantName;
+let plantImage;
+//const database = require("./plants-database"); // JSON database of plants (for local testing)
 
 main();
 // Main to call functions in one place
@@ -30,22 +35,22 @@ function main() {
   // When the bot is followed, call followed function
   stream.on("follow", followed);
 
-  // Set count to milliseconds till 12pm
+  // Set count to milliseconds till 11am
   let now = new Date();
-  let millisTill12 =
-    new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12, 0, 0, 0) -
+  let millisTill11 =
+    new Date(now.getFullYear(), now.getMonth(), now.getDate(), 11, 0, 0, 0) -
     now;
-  // If past 12, wait 24 hours
-  if (millisTill12 < 0) {
-    millisTill12 += 86400000;
+  // If past 11, wait 24 hours
+  if (millisTill11 < 0) {
+    millisTill11 += 86400000;
   }
-  // Call functions at 12pm
+  // Call functions at 11am
   setTimeout(function () {
     //  plant of the day
     dailyPlant();
     // Tweet top post of called subreddits
     callSubreddits();
-  }, millisTill12);
+  }, millisTill11);
 
   // Retweet something in 10 hour intervals
   setInterval(retweetRecent, 1000 * 60 * 60 * 10);
@@ -109,26 +114,6 @@ function mentioned(tweet) {
   likeTweet(tweet);
 }
 
-// Reponse when new follower recieved
-function followed(event) {
-  // Get username & screen_name of user who followed bot
-  let name = tweet.user.name;
-  let screenName = event.source.screen_name;
-  let response =
-    "Hi, thanks for following me, " + name + "! Hope you enjoy my tweets :) ";
-  // Message new follower
-  twitter.post(
-    "direct_messages/new",
-    { user_id: user.id_str, response },
-    function (err) {
-      err
-        ? console.log("Failed to message follower: " + err)
-        : "New follower messaged!";
-    }
-  );
-  console.log("I was followed by: @" + screenName);
-}
-
 // Retweet recent tweet
 function retweetRecent() {
   // Params to search for tweets
@@ -150,6 +135,26 @@ function retweetRecent() {
       console.log("There was an error while searching for tweets: ", err);
     }
   });
+}
+
+// Reponse when new follower recieved
+function followed(event) {
+  // Get username & screen_name of user who followed bot
+  let name = tweet.user.name;
+  let screenName = event.source.screen_name;
+  let response =
+    "Hi, thanks for following me, " + name + "! Hope you enjoy my tweets :) ";
+  // Message new follower
+  twitter.post(
+    "direct_messages/new",
+    { user_id: user.id_str, response },
+    function (err) {
+      err
+        ? console.log("Failed to message follower: " + err)
+        : "New follower messaged!";
+    }
+  );
+  console.log("I was followed by: @" + screenName);
 }
 
 // Check if function worked by logging tweet or error message
@@ -232,9 +237,9 @@ async function scrapeSubreddit(sub) {
 
       let mediaIdStr = data.media_id_string;
       let params = { status: statusText, media_ids: [mediaIdStr] };
-      console.log(statusText);
+      // console.log(statusText);
       // Post tweet
-      //  tweetNow(params);
+      tweetNow(params);
     }
   }, 1500);
 }
@@ -247,17 +252,15 @@ async function scrapeSubreddit(sub) {
 
 // Post plant of the day every 24 hours
 function dailyPlant() {
-  // Get index of plant database to post
-  readTxt("plantCounter.txt");
   // Store image here
   let dest = "./media/dailyplant.jpg";
+  // Get daily plant from firebase
+  readFirebase();
   setTimeout(getPlant, 1000);
 
   function getPlant() {
-    let url = database[index].plantImage;
-    let plantName = database[index].plantName;
     // Store image in project (overrides previous image)
-    downloadImage(url, dest);
+    downloadImage(plantImage, dest);
 
     // Give time to ensure image is downloaded
     setTimeout(function () {
@@ -268,8 +271,6 @@ function dailyPlant() {
 
       // Upload the image to be able to post it
       twitter.post("media/upload", { media_data: b64content }, uploaded);
-      // Write next index to file
-      writeTxt("plantCounter.txt");
 
       function uploaded(err, data, response) {
         // Now we can reference the image and post a tweet with the image
@@ -282,7 +283,7 @@ function dailyPlant() {
         let params = { status: statusText, media_ids: [mediaIdStr] };
         console.log(statusText);
         // Post tweet
-        //tweetNow(params);
+        tweetNow(params);
       }
     }, 1500);
   }
@@ -291,8 +292,7 @@ function dailyPlant() {
 /**********************************************
  * Other functions
  * - downloadImage()
- * - readTxt()
- * - writeTxt()
+ * - readFirebase()
  **********************************************/
 
 // Download image from reddit post (url) and store it in destination
@@ -310,24 +310,23 @@ function downloadImage(url, dest) {
     .catch((err) => console.log(err));
 }
 
-// Read text file and store as index (for getting next plant)
-function readTxt(file) {
-  fs.readFile(file, "utf8", function (err, data) {
-    if (err) throw err;
-    index = data;
-    // Reset database to first if all plants tweeted
-    if (index > database.length) index = 0;
-    return index;
-  });
+// Firebase: get first object from database and store name and image
+function readFirebase() {
+  let ref = db.ref("/");
+  // Read first entry from reference and then remove it so it is not repeated
+  ref.limitToFirst(1).once(
+    "value",
+    function (snapshot) {
+      snapshot.forEach((snap) => {
+        plantName = snap.val().plantName;
+        plantImage = snap.val().plantImage;
+        db.ref("/" + snap.key).remove();
+        console.log("Removed " + plantName + "from firebase")
+      });
+    },
+    function (errorObject) {
+      console.log("The read (firebase) failed: " + errorObject.code);
+    }
+  );
 }
 
-// Increment index and write new number to file
-function writeTxt(file) {
-  index++;
-  fs.writeFile(file, index, (err) => {
-    if (err) {
-      throw err;
-    }
-    console.log("Plants-database index incremented: " + index);
-  });
-}
