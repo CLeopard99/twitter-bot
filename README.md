@@ -1,6 +1,6 @@
 # NodeJS Twitter Bot
 
-I built this Twitter-Bot built in NodeJS to practice more with REST APIs and I wanted to learn how to build a bot. This bot is deployed to Heroku and be found at [@DailyPlantBot](https://twitter.com/DailyPlantBot) on Twitter , which tweets the top post of my favorite plant subreddits, post a new succulent/cacti every day, retweets every 10 hours, and responds to activity involving the bot.
+I built this Twitter-Bot built in NodeJS to practice more with REST APIs and I wanted to learn how to build a bot. This bot is deployed to Heroku and be found at [@DailyPlantBot](https://twitter.com/DailyPlantBot) on Twitter , which tweets the top post of my favorite plant subreddits, post a new succulent/cacti every day, retweets every few hours, and responds to activity involving the bot.
 
 This project includes the following:
 
@@ -9,6 +9,8 @@ This project includes the following:
 - Uses the Reddit API (with [snoowrap](https://github.com/not-an-aardvark/snoowrap)) to grab the top posts of specified subreddits
 
 - Axios and Cheerio are used for web-scraping to write to a large JSON file to create unique daily tweets
+
+- Google Firebase real-time database stores the data scrapped, reads, and deletes to work while deployed with Heroku
 
 - The functions required to download images from urls, convert to base64 for media uploads, tweet creation etc.
 
@@ -71,7 +73,7 @@ If you have done it correctly (with immediate function calls) then you should se
 
 - [ ] Prevent duplicate posts
 
-- [ ] Tweet at more specific times
+- [x] Tweet at more specific times
 
 - [ ] Handle Reddit post that contain media other than an image
 
