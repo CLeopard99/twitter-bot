@@ -10,8 +10,9 @@
   "author": "Charlie Leopard",
   "license": "ISC",
   "dependencies": {
-    "axios": "^0.20.0",
+    "axios": "^0.27.2",
     "cheerio": "^1.0.0-rc.3",
+    "firebase": "^9.8.2",
     "image-downloader": "^4.0.1",
     "snoowrap": "^1.21.0",
     "twit": "^2.2.11"

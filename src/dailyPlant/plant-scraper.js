@@ -1,25 +1,13 @@
-/**********************************************************************
- * plant-scraper.js includes:
- * - Using axios and cheerio to scrape a website for text and images
- * - Shuffling the array of data and writing to JSON file
- * 
- * Author: Charlie Leopard
- *********************************************************************/
-
 const axios = require("axios");
 const cheerio = require("cheerio");
 const fs = require("fs");
 scrapeSite();
 
-// scrape plant names and images from specific website
 function scrapeSite() {
-  // url of webpage to scrape
   const url = "https://example.com";
   axios(url)
     .then((response) => {
-      // take html of page
       const html = response.data;
-      // load html into cheerio
       const $ = cheerio.load(html);
       // store div content and initialise array
       const plantSite = $(".className");
@@ -28,7 +16,6 @@ function scrapeSite() {
       plantSite.each(function () {
         const plantName = $(this).find("a").text();
         const plantImage = $(this).find("img").attr("src");
-        // push object of data to array
         plants.push({
           plantName,
           plantImage,
@@ -49,11 +36,8 @@ function shuffle(arr) {
   writeToFile(arr);
 }
 
-// write object array to a JSON file
 function writeToFile(arr) {
-  // convert array to string
   const data = JSON.stringify(arr);
-  // write to json file
   fs.writeFile("succulents-database.json", data, (err) => {
     if (err) {
       throw err;
