@@ -1,19 +1,27 @@
 {
   "name": "twitter-bot",
-  "version": "1.0.0",
-  "description": "Twitter-bot used to experiment with the Twitter API, Reddit API, & web-scraping",
+  "version": "1.0.1",
+  "description": "Twitter-bot that uses the the Twitter API, Reddit API, & web-scraping for @DailyPlantBot",
   "main": "index.js",
+  "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node src/index.js",
+    "test": "jest --config ./jest.config.json",
+    "test:watch": "npm run test -- --watch"
   },
   "keywords": [],
   "author": "Charlie Leopard",
   "license": "ISC",
   "dependencies": {
-    "axios": "^0.20.0",
+    "axios": "^0.27.2",
     "cheerio": "^1.0.0-rc.3",
+    "firebase": "^9.8.2",
+    "heroku": "^7.33.3",
     "image-downloader": "^4.0.1",
     "snoowrap": "^1.21.0",
     "twit": "^2.2.11"
+  },
+  "devDependencies": {
+    "jest": "^28.1.0"
   }
 }

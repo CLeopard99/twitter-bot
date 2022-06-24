@@ -1,6 +1,6 @@
 # NodeJS Twitter Bot
 
-I built this Twitter-Bot built in NodeJS to practice more with REST APIs and I wanted to learn how to build a bot. This bot is deployed to Heroku and be found at [@DailyPlantBot](https://twitter.com/DailyPlantBot) on Twitter , which tweets the top post of my favorite plant subreddits, post a new succulent/cacti every day, retweets every few hours, and responds to activity involving the bot.
+I built this Twitter-Bot built in NodeJS to use social media APIs and web-scraping. This bot is deployed to Heroku and be found at [@DailyPlantBot](https://twitter.com/DailyPlantBot) on Twitter, which tweets the top post of selected plant-related subreddits, post a new succulent/cacti every day from a database, retweets every few hours, and responds to activity involving the bot (e.g., liking comments).
 
 This project includes the following:
 
@@ -10,11 +10,8 @@ This project includes the following:
 
 - Axios and Cheerio are used for web-scraping to write to a large JSON file to create unique daily tweets
 
-- Google Firebase real-time database stores the data scrapped, reads, and deletes to work while deployed with Heroku
-
 - The functions required to download images from urls, convert to base64 for media uploads, tweet creation etc.
 
-Have a look at bot.js for more information.
 
 ## Making Your Own Bot  
 
@@ -45,11 +42,7 @@ module.exports = {
 
 5. You can now create your own bot with your own values and interact with other APIs or databases
 
-6. Type the following in the command line in your project directory:
-
-```node
-node bot.js
-```
+6. Enter `npm start' in your project directory
 
 If you have done it correctly (with immediate function calls) then you should see some activity e.g. the bot tweeting. A running server like Heroku can run your Twitter bot for you.
 
@@ -65,17 +58,6 @@ If you have done it correctly (with immediate function calls) then you should se
 
 [Node Image Downloader](https://www.npmjs.com/package/image-downloader)
 
-## Improvements to be made
-
-- [ ] Resize images to be fully visible without pressing
-
-- [ ] Edit tweets over 140 characters (end with ...)
-
-- [ ] Prevent duplicate posts
-
-- [x] Tweet at more specific times
-
-- [ ] Handle Reddit post that contain media other than an image
 
 ## License
 
@@ -94,4 +76,3 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 ```
-
